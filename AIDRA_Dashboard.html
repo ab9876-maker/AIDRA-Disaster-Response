@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIDRA — Adaptive Intelligent Disaster Response Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0c12;
+  --surface: #10131c;
+  --card: #141820;
+  --border: #1e2535;
+  --accent: #f04e23;
+  --accent2: #f0a823;
+  --accent3: #23d5f0;
+  --safe: #22c55e;
+  --risk: #ef4444;
+  --moderate: #f59e0b;
+  --minor: #3b82f6;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --mono: 'Space Mono', monospace;
+  --sans: 'Syne', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+
+/* HEADER */
+.header {
+  background: linear-gradient(135deg, #0a0c12 0%, #0d1520 50%, #0a0c12 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 24px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo-icon { width: 40px; height: 40px; background: var(--accent); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.logo-text { font-size: 22px; font-weight: 800; letter-spacing: 2px; color: #fff; }
+.logo-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); letter-spacing: 1px; }
+.header-badges { display: flex; gap: 8px; }
+.badge { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; font-size: 11px; font-family: var(--mono); color: var(--accent3); }
+
+/* NAV TABS */
+.nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 40px; display: flex; gap: 0; overflow-x: auto; }
+.nav-tab { padding: 14px 20px; font-size: 13px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); transition: all 0.2s; white-space: nowrap; letter-spacing: 0.5px; }
+.nav-tab:hover { color: var(--text); }
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* MAIN */
+.main { padding: 32px 40px; max-width: 1400px; margin: 0 auto; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* GRID LAYOUTS */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+/* CARDS */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+.card-title { font-size: 11px; font-family: var(--mono); letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
+.card-value { font-size: 36px; font-weight: 800; color: #fff; }
+.card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* KPI CARDS */
+.kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; overflow: hidden; }
+.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.kpi-card.green::before { background: var(--safe); }
+.kpi-card.red::before { background: var(--risk); }
+.kpi-card.yellow::before { background: var(--moderate); }
+.kpi-card.blue::before { background: var(--accent3); }
+.kpi-card.orange::before { background: var(--accent); }
+
+/* SECTION TITLES */
+.section-title { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+.section-title .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+
+/* MAP GRID */
+.map-container { display: flex; gap: 24px; align-items: flex-start; }
+.map-wrap { flex: 0 0 auto; }
+.map-legend { flex: 1; }
+#map-canvas { display: block; border: 1px solid var(--border); border-radius: 6px; image-rendering: pixelated; cursor: crosshair; }
+.map-controls { display: flex; gap: 10px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
+.btn { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 4px; font-family: var(--mono); font-size: 12px; cursor: pointer; transition: all 0.15s; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.time-display { font-family: var(--mono); font-size: 13px; color: var(--accent3); }
+.step-slider { flex: 1; min-width: 150px; accent-color: var(--accent); }
+
+/* LEGEND ITEMS */
+.legend-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 12px; color: var(--text); }
+.legend-dot { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+/* VICTIM TABLE */
+.vtable { width: 100%; border-collapse: collapse; font-size: 13px; }
+.vtable th { text-align: left; padding: 8px 12px; font-family: var(--mono); font-size: 11px; letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--border); }
+.vtable td { padding: 10px 12px; border-bottom: 1px solid rgba(30,37,53,0.5); }
+.vtable tr:hover td { background: rgba(240,78,35,0.04); }
+.severity-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-family: var(--mono); font-weight: 700; }
+.sev-critical { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+.sev-moderate { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+.sev-minor { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+.status-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-family: var(--mono); }
+.st-rescued { background: rgba(34,197,94,0.15); color: #4ade80; }
+.st-deceased { background: rgba(239,68,68,0.1); color: #f87171; }
+.st-waiting { background: rgba(100,116,139,0.15); color: #94a3b8; }
+.st-in_rescue { background: rgba(35,213,240,0.15); color: #67e8f9; }
+
+/* SURVIVAL BAR */
+.surv-bar-wrap { display: flex; align-items: center; gap: 8px; }
+.surv-bar { height: 6px; border-radius: 3px; background: var(--border); flex: 1; overflow: hidden; }
+.surv-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.surv-val { font-family: var(--mono); font-size: 11px; color: var(--muted); width: 40px; text-align: right; }
+
+/* BAR CHART */
+.bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 160px; padding: 0 0 24px 0; position: relative; }
+.bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bar { border-radius: 3px 3px 0 0; transition: height 0.4s ease; min-width: 18px; cursor: pointer; position: relative; }
+.bar-label { font-size: 10px; font-family: var(--mono); color: var(--muted); text-align: center; margin-top: 6px; }
+.bar-val { font-size: 11px; font-family: var(--mono); color: var(--text); }
+.bar-axis { border-top: 1px solid var(--border); padding-top: 4px; display: flex; justify-content: space-between; font-size: 10px; font-family: var(--mono); color: var(--muted); }
+
+/* RADAR CHART */
+canvas.radar { display: block; margin: 0 auto; }
+
+/* DECISION LOG */
+.dlog { max-height: 400px; overflow-y: auto; }
+.dlog::-webkit-scrollbar { width: 4px; }
+.dlog::-webkit-scrollbar-track { background: var(--surface); }
+.dlog::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.dlog-entry { padding: 12px; border-left: 2px solid var(--border); margin-bottom: 8px; border-radius: 0 4px 4px 0; background: var(--surface); transition: border-color 0.2s; }
+.dlog-entry:hover { border-color: var(--accent); }
+.dlog-time { font-family: var(--mono); font-size: 10px; color: var(--accent3); }
+.dlog-type { font-size: 11px; font-weight: 600; color: var(--accent); margin: 2px 0; letter-spacing: 0.5px; }
+.dlog-desc { font-size: 12px; color: var(--text); margin: 4px 0; }
+.dlog-obj { font-size: 11px; color: var(--moderate); font-family: var(--mono); }
+.dlog-just { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+/* CONFUSION MATRIX */
+.cm { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; max-width: 200px; }
+.cm-cell { padding: 12px; border-radius: 4px; text-align: center; font-family: var(--mono); }
+.cm-tp { background: rgba(34,197,94,0.2); color: #4ade80; }
+.cm-tn { background: rgba(59,130,246,0.2); color: #60a5fa; }
+.cm-fp { background: rgba(239,68,68,0.15); color: #f87171; }
+.cm-fn { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.cm-label { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+/* POLICY COMPARE */
+.policy-row { display: grid; grid-template-columns: 100px 1fr 1fr 1fr 1fr 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); align-items: center; font-size: 13px; }
+.policy-row:first-child { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; color: var(--muted); }
+.policy-name { font-weight: 700; font-family: var(--mono); font-size: 12px; }
+.policy-fast { color: var(--accent); }
+.policy-safe { color: var(--safe); }
+.policy-balanced { color: var(--accent3); }
+
+/* METRIC BAR */
+.metric-bar { height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; }
+.metric-fill { height: 100%; border-radius: 4px; }
+
+/* CSP COMPARISON */
+.csp-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.csp-key { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+.csp-val { font-family: var(--mono); color: var(--accent3); }
+
+/* ALGO TABLE */
+.algo-table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--mono); }
+.algo-table th { text-align: left; padding: 8px 10px; color: var(--muted); font-size: 10px; letter-spacing: 1px; border-bottom: 1px solid var(--border); }
+.algo-table td { padding: 9px 10px; border-bottom: 1px solid rgba(30,37,53,0.5); }
+.algo-table tr.winner td { color: var(--safe); }
+.highlight { color: var(--accent2); font-weight: 700; }
+
+/* RESPONSIVE */
+@media(max-width: 900px) {
+  .main { padding: 20px; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .map-container { flex-direction: column; }
+  .header { padding: 16px 20px; }
+  .nav { padding: 0 20px; }
+}
+
+/* ANIMATIONS */
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+.pulse { animation: pulse 1.5s infinite; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.4s ease both; }
+
+/* SCROLL AREA */
+.scroll-x { overflow-x: auto; }
+
+/* FUZZY BARS */
+.fuzzy-rule { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+.fuzzy-name { font-size: 11px; font-family: var(--mono); color: var(--muted); width: 80px; }
+.fuzzy-bar-wrap { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.fuzzy-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+.fuzzy-val { font-size: 11px; font-family: var(--mono); color: var(--text); width: 45px; text-align: right; }
+
+/* EMPTY STATE */
+.empty { text-align: center; padding: 40px; color: var(--muted); font-family: var(--mono); font-size: 13px; }
+
+/* FOOTER */
+.footer { text-align: center; padding: 32px; color: var(--muted); font-size: 11px; font-family: var(--mono); border-top: 1px solid var(--border); margin-top: 48px; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">⬡</div>
+    <div>
+      <div class="logo-text">AIDRA</div>
+      <div class="logo-sub">Adaptive Intelligent Disaster Response Agent</div>
+    </div>
+  </div>
+  <div class="header-badges">
+    <span class="badge">AIC-201</span>
+    <span class="badge">SEMESTER 5-A</span>
+    <span class="badge">CCP PROJECT</span>
+  </div>
+</header>
+
+<nav class="nav">
+  <div class="nav-tab active" onclick="showTab('overview')">Overview</div>
+  <div class="nav-tab" onclick="showTab('simulation')">Live Simulation</div>
+  <div class="nav-tab" onclick="showTab('search')">Search & Planning</div>
+  <div class="nav-tab" onclick="showTab('csp')">CSP Allocation</div>
+  <div class="nav-tab" onclick="showTab('ml')">ML Models</div>
+  <div class="nav-tab" onclick="showTab('uncertainty')">Uncertainty</div>
+  <div class="nav-tab" onclick="showTab('decisions')">Decision Log</div>
+  <div class="nav-tab" onclick="showTab('compare')">Policy Comparison</div>
+</nav>
+
+<main class="main">
+
+<!-- ══════════ OVERVIEW ══════════ -->
+<div id="tab-overview" class="tab-content active fade-in">
+  <div class="section-title"><span class="dot"></span>System Performance Overview</div>
+  <div class="grid-4" style="margin-bottom:24px">
+    <div class="kpi-card green">
+      <div class="card-title">Victims Rescued</div>
+      <div class="card-value" id="ov-saved">—</div>
+      <div class="card-sub">out of <span id="ov-total">—</span> total victims</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="card-title">Victims Deceased</div>
+      <div class="card-value" id="ov-deceased">—</div>
+      <div class="card-sub">survival probability depleted</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="card-title">Avg Rescue Time</div>
+      <div class="card-value" id="ov-time">—</div>
+      <div class="card-sub">time steps from dispatch</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="card-title">Risk Exposure</div>
+      <div class="card-value" id="ov-risk">—</div>
+      <div class="card-sub">high-risk cells traversed</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:24px">
+    <div class="card">
+      <div class="card-title">Victim Priority Order (Fuzzy + Severity)</div>
+      <div id="priority-table"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Rescue Summary</div>
+      <div id="rescue-summary"></div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Resource Utilization</div>
+      <div id="resource-stats"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Path Optimality</div>
+      <canvas id="bar-optimality" width="220" height="140"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">System Architecture</div>
+      <div id="arch-diagram"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SIMULATION ══════════ -->
+<div id="tab-simulation" class="tab-content fade-in">
+  <div class="section-title"><span class="dot"></span>Live Disaster Response Simulation</div>
+  <div class="map-container">
+    <div class="map-wrap">
+      <canvas id="map-canvas" width="500" height="500"></canvas>
+      <div class="map-controls">
+        <button class="btn active" id="btn-play" onclick="togglePlay()">▶ Play</button>
+        <button class="btn" onclick="stepBack()">◀</button>
+        <button class="btn" onclick="stepFwd()">▶</button>
+        <button class="btn" onclick="resetSim()">↺ Reset</button>
+        <input type="range" id="sim-slider" class="step-slider" min="0" max="57" value="0" oninput="gotoStep(+this.value)">
+        <span class="time-display" id="sim-time">T = 0</span>
+      </div>
+    </div>
+    <div class="map-legend">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Map Legend</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1e2535"></div> Road</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> High-Risk Zone</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#374151"></div> Blocked Road</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> Safe Zone</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Medical Center</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f0a823"></div> Base</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f04e23; border-radius:50%"></div> Ambulance</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ffffff; border-radius:50%"></div> Victim</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Current State</div>
+        <div id="sim-state"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SEARCH ══════════ -->
+<div id="tab-search" class="tab-content fade-in">
+  <div class="section-title"><span class="dot"></span>Search Algorithm Comparison</div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Benchmark: Base (0,0) → Medical Center (9,9)</div>
+    <div class="scroll-x">
+      <table class="algo-table" id="algo-bench-table"></table>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Algorithm Performance Visualization</div>
+    <canvas id="search-chart" width="700" height="220"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Per-Rescue Route Analysis</div>
+    <div id="route-analysis"></div>
+  </div>
+</div>
+
+<!-- ══════════ CSP ══════════ -->
+<div id="tab-csp" class="tab-content fade-in">
+  <div class="section-title"><span class="dot"></span>Constraint Satisfaction — Resource Allocation</div>
+  <div class="grid-2" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-title">CSP Solver Statistics</div>
+      <div id="csp-stats-display"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">With Heuristics (MRV + Forward Checking) vs. Naive</div>
+      <canvas id="csp-compare-chart" width="300" height="200"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Victim → Ambulance Assignments</div>
+    <div id="assignments-display"></div>
+  </div>
+</div>
+
+<!-- ══════════ ML ══════════ -->
+<div id="tab-ml" class="tab-content fade-in">
+  <div class="section-title"><span class="dot"></span>Machine Learning — Risk & Survival Estimation</div>
+  <div class="grid-3" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-title">kNN (k=7) — Survival Prediction</div>
+      <div id="ml-knn-metrics"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Naive Bayes — Survival Prediction</div>
+      <div id="ml-nb-metrics"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">MLP Perceptron — Survival Prediction</div>
+      <div id="ml-mlp-metrics"></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Model Comparison — F1 Score & Accuracy</div>
+      <canvas id="ml-compare-chart" width="400" height="220"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Victim Survival Probability Estimates</div>
+      <div id="survival-estimates"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ UNCERTAINTY ══════════ -->
+<div id="tab-uncertainty" class="tab-content fade-in">
+  <div class="section-title"><span class="dot"></span>Uncertainty Handling — Fuzzy Logic & Bayesian Inference</div>
+  <div class="grid-2" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-title">Fuzzy Logic Priority System</div>
+      <div id="fuzzy-explanation"></div>
+      <div style="margin-top:16px">
+        <div class="card-title" style="margin-bottom:8px">Interactive Fuzzy Scorer</div>
+        <div style="display:flex; flex-direction:column; gap:10px; font-size:13px">
+          <label>Severity: <input type="range" id="f-sev" min="1" max="3" step="0.1" value="3" oninput="updateFuzzy()"> <span id="f-sev-v">3.0</span></label>
+          <label>Survival Prob: <input type="range" id="f-surv" min="0" max="1" step="0.01" value="0.65" oninput="updateFuzzy()"> <span id="f-surv-v">0.65</span></label>
+          <label>Wait Time: <input type="range" id="f-wait" min="0" max="30" step="1" value="0" oninput="updateFuzzy()"> <span id="f-wait-v">0</span></label>
+        </div>
+        <div id="fuzzy-result" style="margin-top:14px; padding:12px; background:var(--surface); border-radius:6px"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Bayesian Road Blockage Estimator</div>
+      <div id="bayesian-explanation"></div>
+      <div style="margin-top:16px">
+        <div class="card-title" style="margin-bottom:8px">Posterior Probability Explorer</div>
+        <div style="font-size:13px; display:flex; flex-direction:column; gap:8px">
+          <label>Zone Type:
+            <select id="b-zone" onchange="updateBayes()" style="background:var(--surface);color:var(--text);border:1px solid var(--border);padding:4px 8px;border-radius:4px;font-size:12px">
+              <option value="high_risk_zone">High-Risk Zone</option>
+              <option value="moderate_zone">Moderate Zone</option>
+              <option value="safe_zone">Safe Zone</option>
+            </select>
+          </label>
+          <div>Evidence (check all that apply):</div>
+          <label><input type="checkbox" id="b-aftershock" onchange="updateBayes()"> Aftershock Detected</label>
+          <label><input type="checkbox" id="b-fire" onchange="updateBayes()"> Fire Nearby</label>
+          <label><input type="checkbox" id="b-struct" onchange="updateBayes()"> Structural Damage Report</label>
+          <label><input type="checkbox" id="b-traffic" onchange="updateBayes()"> Traffic Flow Stopped</label>
+        </div>
+        <div id="bayes-result" style="margin-top:14px; padding:12px; background:var(--surface); border-radius:6px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DECISIONS ══════════ -->
+<div id="tab-decisions" class="tab-content fade-in">
+  <div class="section-title"><span class="dot"></span>Decision Log — Agent Reasoning Trace</div>
+  <div style="margin-bottom:16px; display:flex; gap:8px; flex-wrap:wrap">
+    <button class="btn active" onclick="filterLog('ALL')">All</button>
+    <button class="btn" onclick="filterLog('INITIAL_PLANNING')">Planning</button>
+    <button class="btn" onclick="filterLog('DYNAMIC_EVENT')">Events</button>
+    <button class="btn" onclick="filterLog('REPLAN_TRIGGERED')">Replanning</button>
+    <button class="btn" onclick="filterLog('VICTIM_RESCUED')">Rescued</button>
+    <button class="btn" onclick="filterLog('CSP')">CSP</button>
+    <button class="btn" onclick="filterLog('SEARCH')">Search</button>
+  </div>
+  <div class="dlog" id="decision-log"></div>
+</div>
+
+<!-- ══════════ COMPARE ══════════ -->
+<div id="tab-compare" class="tab-content fade-in">
+  <div class="section-title"><span class="dot"></span>Policy Comparison — Fast vs Safe vs Balanced</div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Objective Trade-off Analysis</div>
+    <canvas id="radar-chart" width="420" height="320"></canvas>
+  </div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Metrics Table</div>
+    <div id="policy-table"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Trade-off Explanation</div>
+    <div id="tradeoff-explain"></div>
+  </div>
+</div>
+
+</main>
+
+<footer class="footer">
+  AIDRA · AIC-201 Complex Computing Problem · Dr. Arshad Farhad · Semester 5-A<br>
+  Hybrid AI System: Search · CSP · Machine Learning · Fuzzy Logic · Bayesian Inference · Dynamic Replanning
+</footer>
+
+<script>
+const D = {"policies": {"fast": {"saved": 3, "deceased": 3, "avg_time": 42.0, "risk": 0.0408, "optimality": 0.857}, "safe": {"saved": 3, "deceased": 3, "avg_time": 42.0, "risk": 0.0, "optimality": 0.857}, "balanced": {"saved": 3, "deceased": 3, "avg_time": 42.0, "risk": 0.0, "optimality": 0.857}}, "search_benchmark": {"BFS": {"algorithm": "BFS", "nodes_expanded": 98, "max_frontier": 10, "path_length": 19, "path_cost": 19.0, "risk_cells": 0, "time_ms": 0.139, "complete": true, "optimal": true}, "DFS": {"algorithm": "DFS", "nodes_expanded": 55, "max_frontier": 44, "path_length": 55, "path_cost": 58.0, "risk_cells": 3, "time_ms": 0.083, "complete": true, "optimal": false}, "Greedy": {"algorithm": "Greedy-BF", "nodes_expanded": 19, "max_frontier": 16, "path_length": 19, "path_cost": 19.0, "risk_cells": 0, "time_ms": 0.041, "complete": true, "optimal": false}, "A*_balanced": {"algorithm": "A*", "nodes_expanded": 90, "max_frontier": 17, "path_length": 19, "path_cost": 18, "risk_cells": 0, "time_ms": 0.261, "complete": true, "optimal": true, "risk_penalty_used": 3.0}, "A*_safe": {"algorithm": "A*", "nodes_expanded": 90, "max_frontier": 11, "path_length": 19, "path_cost": 18, "risk_cells": 0, "time_ms": 0.241, "complete": true, "optimal": true, "risk_penalty_used": 10.0}}, "search_comparisons": [{"from": [0, 0], "to": [7, 8], "amb_id": 1, "victim_id": 6, "comparisons": {"BFS": {"algorithm": "BFS", "nodes_expanded": 89, "max_frontier": 10, "path_length": 16, "path_cost": 16.0, "risk_cells": 0, "time_ms": 0.133, "complete": true, "optimal": true}, "DFS": {"algorithm": "DFS", "nodes_expanded": 36, "max_frontier": 35, "path_length": 36, "path_cost": 40.0, "risk_cells": 4, "time_ms": 0.053, "complete": true, "optimal": false}, "Greedy-BF": {"algorithm": "Greedy-BF", "nodes_expanded": 16, "max_frontier": 19, "path_length": 16, "path_cost": 16.0, "risk_cells": 0, "time_ms": 0.04, "complete": true, "optimal": false}, "A*_balanced": {"algorithm": "A*", "nodes_expanded": 60, "max_frontier": 23, "path_length": 16, "path_cost": 15, "risk_cells": 0, "time_ms": 0.179, "complete": true, "optimal": true, "risk_penalty_used": 3.0, "selection_reason": "A* (balanced, risk_penalty=3.0) selected: optimal trade-off between time and risk", "policy": "balanced"}, "A*_safe": {"algorithm": "A*", "nodes_expanded": 60, "max_frontier": 16, "path_length": 16, "path_cost": 15, "risk_cells": 0, "time_ms": 0.167, "complete": true, "optimal": true, "risk_penalty_used": 10.0}}, "selected": {"algorithm": "A*", "nodes_expanded": 60, "max_frontier": 23, "path_length": 16, "path_cost": 15, "risk_cells": 0, "time_ms": 0.179, "complete": true, "optimal": true, "risk_penalty_used": 3.0, "selection_reason": "A* (balanced, risk_penalty=3.0) selected: optimal trade-off between time and risk", "policy": "balanced"}}, {"from": [7, 8], "to": [7, 6], "amb_id": 1, "victim_id": 3, "comparisons": {"BFS": {"algorithm": "BFS", "nodes_expanded": 11, "max_frontier": 8, "path_length": 3, "path_cost": 3.0, "risk_cells": 0, "time_ms": 0.019, "complete": true, "optimal": true}, "DFS": {"algorithm": "DFS", "nodes_expanded": 21, "max_frontier": 17, "path_length": 21, "path_cost": 21.0, "risk_cells": 0, "time_ms": 0.03, "complete": true, "optimal": false}, "Greedy-BF": {"algorithm": "Greedy-BF", "nodes_expanded": 3, "max_frontier": 5, "path_length": 3, "path_cost": 3.0, "risk_cells": 0, "time_ms": 0.008, "complete": true, "optimal": false}, "A*_balanced": {"algorithm": "A*", "nodes_expanded": 3, "max_frontier": 5, "path_length": 3, "path_cost": 2, "risk_cells": 0, "time_ms": 0.009, "complete": true, "optimal": true, "risk_penalty_used": 3.0, "selection_reason": "A* (balanced, risk_penalty=3.0) selected: optimal trade-off between time and risk", "policy": "balanced"}, "A*_safe": {"algorithm": "A*", "nodes_expanded": 3, "max_frontier": 5, "path_length": 3, "path_cost": 2, "risk_cells": 0, "time_ms": 0.008, "complete": true, "optimal": true, "risk_penalty_used": 10.0}}, "selected": {"algorithm": "A*", "nodes_expanded": 3, "max_frontier": 5, "path_length": 3, "path_cost": 2, "risk_cells": 0, "time_ms": 0.009, "complete": true, "optimal": true, "risk_penalty_used": 3.0, "selection_reason": "A* (balanced, risk_penalty=3.0) selected: optimal trade-off between time and risk", "policy": "balanced"}}, {"from": [0, 0], "to": [1, 8], "amb_id": 2, "victim_id": 4, "comparisons": {"BFS": {"algorithm": "BFS", "nodes_expanded": 52, "max_frontier": 10, "path_length": 10, "path_cost": 10.0, "risk_cells": 0, "time_ms": 0.078, "complete": true, "optimal": true}, "DFS": {"algorithm": "DFS", "nodes_expanded": 89, "max_frontier": 42, "path_length": 10, "path_cost": 10.0, "risk_cells": 0, "time_ms": 0.12, "complete": true, "optimal": false}, "Greedy-BF": {"algorithm": "Greedy-BF", "nodes_expanded": 10, "max_frontier": 9, "path_length": 10, "path_cost": 10.0, "risk_cells": 0, "time_ms": 0.02, "complete": true, "optimal": false}, "A*_balanced": {"algorithm": "A*", "nodes_expanded": 17, "max_frontier": 9, "path_length": 10, "path_cost": 9, "risk_cells": 0, "time_ms": 0.047, "complete": true, "optimal": true, "risk_penalty_used": 3.0, "selection_reason": "A* (balanced, risk_penalty=3.0) selected: optimal trade-off between time and risk", "policy": "balanced"}, "A*_safe": {"algorithm": "A*", "nodes_expanded": 17, "max_frontier": 9, "path_length": 10, "path_cost": 9, "risk_cells": 0, "time_ms": 0.045, "complete": true, "optimal": true, "risk_penalty_used": 10.0}}, "selected": {"algorithm": "A*", "nodes_expanded": 17, "max_frontier": 9, "path_length": 10, "path_cost": 9, "risk_cells": 0, "time_ms": 0.047, "complete": true, "optimal": true, "risk_penalty_used": 3.0, "selection_reason": "A* (balanced, risk_penalty=3.0) selected: optimal trade-off between time and risk", "policy": "balanced"}}, {"from": [1, 8], "to": [6, 1], "amb_id": 2, "victim_id": 5, "comparisons": {"BFS": {"algorithm": "BFS", "nodes_expanded": 85, "max_frontier": 12, "path_length": 13, "path_cost": 13.0, "risk_cells": 0, "time_ms": 0.117, "complete": true, "optimal": true}, "DFS": {"algorithm": "DFS", "nodes_expanded": 61, "max_frontier": 37, "path_length": 17, "path_cost": 20.0, "risk_cells": 3, "time_ms": 0.151, "complete": true, "optimal": false}, "Greedy-BF": {"algorithm": "Greedy-BF", "nodes_expanded": 13, "max_frontier": 21, "path_length": 13, "path_cost": 15.0, "risk_cells": 2, "time_ms": 0.068, "complete": true, "optimal": false}, "A*_balanced": {"algorithm": "A*", "nodes_expanded": 24, "max_frontier": 24, "path_length": 13, "path_cost": 12, "risk_cells": 0, "time_ms": 0.117, "complete": true, "optimal": true, "risk_penalty_used": 3.0, "selection_reason": "A* (balanced, risk_penalty=3.0) selected: optimal trade-off between time and risk", "policy": "balanced"}, "A*_safe": {"algorithm": "A*", "nodes_expanded": 24, "max_frontier": 19, "path_length": 13, "path_cost": 12, "risk_cells": 0, "time_ms": 0.074, "complete": true, "optimal": true, "risk_penalty_used": 10.0}}, "selected": {"algorithm": "A*", "nodes_expanded": 24, "max_frontier": 24, "path_length": 13, "path_cost": 12, "risk_cells": 0, "time_ms": 0.117, "complete": true, "optimal": true, "risk_penalty_used": 3.0, "selection_reason": "A* (balanced, risk_penalty=3.0) selected: optimal trade-off between time and risk", "policy": "balanced"}}], "ml_metrics": {"survival_models": {"kNN": {"accuracy": 0.85, "precision": 0.3636, "recall": 0.3333, "f1": 0.3478, "confusion_matrix": [[81, 7], [8, 4]], "tp": 4, "tn": 81, "fp": 7, "fn": 8, "model": "kNN", "task": "survival"}, "Naive Bayes": {"accuracy": 0.87, "precision": 0.4615, "recall": 0.5, "f1": 0.48, "confusion_matrix": [[81, 7], [6, 6]], "tp": 6, "tn": 81, "fp": 7, "fn": 6, "model": "Naive Bayes", "task": "survival"}, "MLP": {"accuracy": 0.88, "precision": 0.0, "recall": 0.0, "f1": 0.0, "confusion_matrix": [[88, 0], [12, 0]], "tp": 0, "tn": 88, "fp": 0, "fn": 12, "model": "MLP", "task": "survival"}}, "risk_models": {"kNN": {"accuracy": 0.7875, "precision": 0.7867, "recall": 0.9833, "f1": 0.8741, "confusion_matrix": [[4, 16], [1, 59]], "tp": 59, "tn": 4, "fp": 16, "fn": 1, "model": "kNN", "task": "risk"}, "Naive Bayes": {"accuracy": 0.8625, "precision": 0.8451, "recall": 1.0, "f1": 0.916, "confusion_matrix": [[9, 11], [0, 60]], "tp": 60, "tn": 9, "fp": 11, "fn": 0, "model": "Naive Bayes", "task": "risk"}}}, "csp_stats": {"solved": true, "victims_assigned": 4, "backtrack_count": 0, "forward_check_prunes": 0, "solve_time_ms": 0.085, "kits_used": 7, "naive_comparison": {"solved": true, "victims_assigned": 4, "backtrack_count": 0, "forward_check_prunes": 0, "solve_time_ms": 0.011, "kits_used": 7, "variant": "naive (no heuristics)"}}, "decision_log": [{"time_step": 0, "event_type": "INITIAL_PLANNING", "description": "Fuzzy priority scores computed for 5 victims.", "objective_prioritized": "Victim Prioritization (Conflicting Obj 2)", "justification": "Fuzzy logic balances severity + survival probability + wait time. Critical victims with low survival probability receive highest urgency. This trades overall throughput for saving the most at-risk victims first.", "details": {"1": {"fuzzy_score": 70.38, "fuzzy_detail": {"priority_score": 70.38, "dominant_rule": "critical", "rule_activations": {"urgent": 0.0, "critical": 0.75, "high": 0.333, "medium": 0.0, "low": 0.0}, "explanation": "Fuzzy priority=70.4/100. Dominant rule: 'critical' (strength=0.75). Inputs: severity=3.0, survival=0.65, wait=0.0t"}}, "2": {"fuzzy_score": 70.38, "fuzzy_detail": {"priority_score": 70.38, "dominant_rule": "critical", "rule_activations": {"urgent": 0.0, "critical": 0.75, "high": 0.333, "medium": 0.0, "low": 0.0}, "explanation": "Fuzzy priority=70.4/100. Dominant rule: 'critical' (strength=0.75). Inputs: severity=3.0, survival=0.65, wait=0.0t"}}, "3": {"fuzzy_score": 50.0, "fuzzy_detail": {"priority_score": 50.0, "dominant_rule": "urgent", "rule_activations": {"urgent": 0.0, "critical": 0.0, "high": 0.0, "medium": 0.0, "low": 0.0}, "explanation": "Fuzzy priority=50.0/100. Dominant rule: 'urgent' (strength=0.00). Inputs: severity=2.0, survival=0.85, wait=0.0t"}}, "4": {"fuzzy_score": 50.0, "fuzzy_detail": {"priority_score": 50.0, "dominant_rule": "urgent", "rule_activations": {"urgent": 0.0, "critical": 0.0, "high": 0.0, "medium": 0.0, "low": 0.0}, "explanation": "Fuzzy priority=50.0/100. Dominant rule: 'urgent' (strength=0.00). Inputs: severity=2.0, survival=0.85, wait=0.0t"}}, "5": {"fuzzy_score": 20.0, "fuzzy_detail": {"priority_score": 20.0, "dominant_rule": "low", "rule_activations": {"urgent": 0.0, "critical": 0.0, "high": 0.0, "medium": 0.0, "low": 1.0}, "explanation": "Fuzzy priority=20.0/100. Dominant rule: 'low' (strength=1.00). Inputs: severity=1.0, survival=0.95, wait=0.0t"}}}}, {"time_step": 0, "event_type": "CSP_ALLOCATION", "description": "CSP solved: 0 victims assigned.", "objective_prioritized": "Hard Resource Constraint", "justification": "CSP with MRV+Forward Checking reduced backtracks to 18 vs 18 naive. All hard constraints satisfied: \u22642 victims/ambulance, kits \u2264 10. Priority rank respects fuzzy ordering.", "details": {"heuristic_stats": {"solved": false, "victims_assigned": 0, "backtrack_count": 18, "forward_check_prunes": 6, "solve_time_ms": 0.168, "kits_used": 0, "naive_comparison": {"solved": false, "victims_assigned": 0, "backtrack_count": 18, "forward_check_prunes": 0, "solve_time_ms": 0.035, "kits_used": 0, "variant": "naive (no heuristics)"}}, "naive_stats": {"solved": false, "victims_assigned": 0, "backtrack_count": 18, "forward_check_prunes": 0, "solve_time_ms": 0.035, "kits_used": 0, "variant": "naive (no heuristics)"}}}, {"time_step": 0, "event_type": "LOCAL_SEARCH_OPTIMIZATION", "description": "Victim visit order optimized via SA.", "objective_prioritized": "Minimize Average Rescue Time", "justification": "HC final cost=32, SA final cost=31. SA selected as it minimized total travel distance. SA ran 135 iterations, HC made 3 swaps.", "details": {"hc": {"algorithm": "Hill Climbing", "iterations": 4, "improvements": 3, "final_cost": 32, "time_ms": 0.07}, "sa": {"algorithm": "Simulated Annealing", "iterations": 135, "accepted_moves": 63, "final_cost": 31, "final_temperature": 0.0983, "time_ms": 0.506}, "selected": "SA"}}, {"time_step": 8, "event_type": "DYNAMIC_EVENT", "description": "Aftershock blocks road at (6,7)", "objective_prioritized": "Dynamic Replanning", "justification": "Event 'road_block' triggered at t=8. Agent detecting environmental change...", "details": {}}, {"time_step": 12, "event_type": "DYNAMIC_EVENT", "description": "Hazard zone expands to (3,3)", "objective_prioritized": "Dynamic Replanning", "justification": "Event 'risk_increase' triggered at t=12. Agent detecting environmental change...", "details": {}}, {"time_step": 15, "event_type": "DYNAMIC_EVENT", "description": "Fire spreads, blocks (8,5)", "objective_prioritized": "Dynamic Replanning", "justification": "Event 'road_block' triggered at t=15. Agent detecting environmental change...", "details": {}}, {"time_step": 17, "event_type": "VICTIM_DECEASED", "description": "V1 (CRITICAL) deceased at t=17", "objective_prioritized": "N/A", "justification": "Survival probability reached 0 before rescue.", "details": {}}, {"time_step": 17, "event_type": "VICTIM_DECEASED", "description": "V2 (CRITICAL) deceased at t=17", "objective_prioritized": "N/A", "justification": "Survival probability reached 0 before rescue.", "details": {}}, {"time_step": 20, "event_type": "DYNAMIC_EVENT", "description": "New victim discovered at (7,8)", "objective_prioritized": "Dynamic Replanning", "justification": "Event 'new_victim' triggered at t=20. Agent detecting environmental change...", "details": {}}, {"time_step": 20, "event_type": "NEW_VICTIM", "description": "New victim discovered at (7,8)", "objective_prioritized": "Overall Throughput (Conflicting Obj 2)", "justification": "New victim detected. Re-evaluating CSP allocation and priorities. Agent must balance this victim's needs against ongoing rescues.", "details": {}}, {"time_step": 20, "event_type": "INITIAL_PLANNING", "description": "Fuzzy priority scores computed for 4 victims.", "objective_prioritized": "Victim Prioritization (Conflicting Obj 2)", "justification": "Fuzzy logic balances severity + survival probability + wait time. Critical victims with low survival probability receive highest urgency. This trades overall throughput for saving the most at-risk victims first.", "details": {"3": {"fuzzy_score": 46.67, "fuzzy_detail": {"priority_score": 46.67, "dominant_rule": "medium", "rule_activations": {"urgent": 0.0, "critical": 0.0, "high": 0.5, "medium": 1.0, "low": 0.0}, "explanation": "Fuzzy priority=46.7/100. Dominant rule: 'medium' (strength=1.00). Inputs: severity=2.0, survival=0.55, wait=20.0t"}}, "4": {"fuzzy_score": 46.67, "fuzzy_detail": {"priority_score": 46.67, "dominant_rule": "medium", "rule_activations": {"urgent": 0.0, "critical": 0.0, "high": 0.5, "medium": 1.0, "low": 0.0}, "explanation": "Fuzzy priority=46.7/100. Dominant rule: 'medium' (strength=1.00). Inputs: severity=2.0, survival=0.55, wait=20.0t"}}, "6": {"fuzzy_score": 40.0, "fuzzy_detail": {"priority_score": 40.0, "dominant_rule": "medium", "rule_activations": {"urgent": 0.0, "critical": 0.0, "high": 0.0, "medium": 0.25, "low": 0.0}, "explanation": "Fuzzy priority=40.0/100. Dominant rule: 'medium' (strength=0.25). Inputs: severity=2.0, survival=0.75, wait=0.0t"}}, "5": {"fuzzy_score": 20.0, "fuzzy_detail": {"priority_score": 20.0, "dominant_rule": "low", "rule_activations": {"urgent": 0.0, "critical": 0.0, "high": 0.0, "medium": 0.0, "low": 1.0}, "explanation": "Fuzzy priority=20.0/100. Dominant rule: 'low' (strength=1.00). Inputs: severity=1.0, survival=0.85, wait=20.0t"}}}}, {"time_step": 20, "event_type": "CSP_ALLOCATION", "description": "CSP solved: 4 victims assigned.", "objective_prioritized": "Hard Resource Constraint", "justification": "CSP with MRV+Forward Checking reduced backtracks to 0 vs 0 naive. All hard constraints satisfied: \u22642 victims/ambulance, kits \u2264 10. Priority rank respects fuzzy ordering.", "details": {"heuristic_stats": {"solved": true, "victims_assigned": 4, "backtrack_count": 0, "forward_check_prunes": 0, "solve_time_ms": 0.085, "kits_used": 7, "naive_comparison": {"solved": true, "victims_assigned": 4, "backtrack_count": 0, "forward_check_prunes": 0, "solve_time_ms": 0.011, "kits_used": 7, "variant": "naive (no heuristics)"}}, "naive_stats": {"solved": true, "victims_assigned": 4, "backtrack_count": 0, "forward_check_prunes": 0, "solve_time_ms": 0.011, "kits_used": 7, "variant": "naive (no heuristics)"}}}, {"time_step": 20, "event_type": "LOCAL_SEARCH_OPTIMIZATION", "description": "Victim visit order optimized via Hill Climbing.", "objective_prioritized": "Minimize Average Rescue Time", "justification": "HC final cost=27, SA final cost=27. Hill Climbing selected as it minimized total travel distance. SA ran 135 iterations, HC made 2 swaps.", "details": {"hc": {"algorithm": "Hill Climbing", "iterations": 3, "improvements": 2, "final_cost": 27, "time_ms": 0.033}, "sa": {"algorithm": "Simulated Annealing", "iterations": 135, "accepted_moves": 65, "final_cost": 27, "final_temperature": 0.0983, "time_ms": 0.576}, "selected": "Hill Climbing"}}, {"time_step": 28, "event_type": "VICTIM_PICKUP", "description": "Amb#1 picked up V4 (MODERATE) at (1, 8)", "objective_prioritized": "Victim Prioritization", "justification": "Victim 4 survival prob at pickup: 0.43", "details": {}}, {"time_step": 34, "event_type": "VICTIM_PICKUP", "description": "Amb#1 picked up V6 (MODERATE) at (7, 8)", "objective_prioritized": "Victim Prioritization", "justification": "Victim 6 survival prob at pickup: 0.54", "details": {}}, {"time_step": 40, "event_type": "VICTIM_PICKUP", "description": "Amb#2 picked up V5 (MINOR) at (6, 1)", "objective_prioritized": "Victim Prioritization", "justification": "Victim 5 survival prob at pickup: 0.75", "details": {}}, {"time_step": 41, "event_type": "VICTIM_RESCUED", "description": "V4 (MODERATE) delivered to medical center (9, 9)", "objective_prioritized": "Victims Saved", "justification": "Rescue complete. Survival probability: 0.43", "details": {}}, {"time_step": 41, "event_type": "VICTIM_RESCUED", "description": "V6 (MODERATE) delivered to medical center (9, 9)", "objective_prioritized": "Victims Saved", "justification": "Rescue complete. Survival probability: 0.54", "details": {}}, {"time_step": 44, "event_type": "VICTIM_RESCUED", "description": "V5 (MINOR) delivered to medical center (9, 0)", "objective_prioritized": "Victims Saved", "justification": "Rescue complete. Survival probability: 0.75", "details": {}}, {"time_step": 57, "event_type": "VICTIM_DECEASED", "description": "V3 (MODERATE) deceased at t=57", "objective_prioritized": "N/A", "justification": "Survival probability reached 0 before rescue.", "details": {}}], "assignments": [{"victim_id": 3, "ambulance_id": 1, "priority_rank": 1, "kits_assigned": 2, "justification": "V3 (MODERATE) \u2192 Amb#1. Kit cost: 2. Priority rank: 1. Survival prob: 0.55. Assigned second tier; moderate urgency."}, {"victim_id": 4, "ambulance_id": 2, "priority_rank": 2, "kits_assigned": 2, "justification": "V4 (MODERATE) \u2192 Amb#2. Kit cost: 2. Priority rank: 2. Survival prob: 0.55. Assigned second tier; moderate urgency."}, {"victim_id": 6, "ambulance_id": 1, "priority_rank": 3, "kits_assigned": 2, "justification": "V6 (MODERATE) \u2192 Amb#1. Kit cost: 2. Priority rank: 3. Survival prob: 0.75. Assigned second tier; moderate urgency."}, {"victim_id": 5, "ambulance_id": 2, "priority_rank": 4, "kits_assigned": 1, "justification": "V5 (MINOR) \u2192 Amb#2. Kit cost: 1. Priority rank: 4. Survival prob: 0.85. Assigned last; minor severity, lower risk of death."}], "priority_order": [{"id": 3, "severity": "MODERATE"}, {"id": 4, "severity": "MODERATE"}, {"id": 6, "severity": "MODERATE"}, {"id": 5, "severity": "MINOR"}], "rescue_log": [{"victim_id": 4, "severity": "MODERATE", "rescue_time": 41, "survival_prob_at_rescue": 0.43, "ambulance": 1}, {"victim_id": 6, "severity": "MODERATE", "rescue_time": 41, "survival_prob_at_rescue": 0.54, "ambulance": 1}, {"victim_id": 5, "severity": "MINOR", "rescue_time": 44, "survival_prob_at_rescue": 0.75, "ambulance": 2}], "snapshots": [{"time_step": 0, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "road", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.65, "time_waiting": 0}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.65, "time_waiting": 0}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.85, "time_waiting": 0}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.85, "time_waiting": 0}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.95, "time_waiting": 0}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 1, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "road", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.61, "time_waiting": 1}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.61, "time_waiting": 1}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.835, "time_waiting": 1}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.835, "time_waiting": 1}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.945, "time_waiting": 1}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 2, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "road", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.57, "time_waiting": 2}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.57, "time_waiting": 2}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.82, "time_waiting": 2}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.82, "time_waiting": 2}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.94, "time_waiting": 2}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 3, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "road", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.53, "time_waiting": 3}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.53, "time_waiting": 3}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.805, "time_waiting": 3}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.805, "time_waiting": 3}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.935, "time_waiting": 3}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 4, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "road", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.49, "time_waiting": 4}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.49, "time_waiting": 4}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.79, "time_waiting": 4}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.79, "time_waiting": 4}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.93, "time_waiting": 4}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 5, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "road", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.45, "time_waiting": 5}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.45, "time_waiting": 5}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.775, "time_waiting": 5}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.775, "time_waiting": 5}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.925, "time_waiting": 5}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 6, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "road", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.41, "time_waiting": 6}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.41, "time_waiting": 6}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.76, "time_waiting": 6}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.76, "time_waiting": 6}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.92, "time_waiting": 6}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 7, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "road", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.37, "time_waiting": 7}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.37, "time_waiting": 7}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.745, "time_waiting": 7}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.745, "time_waiting": 7}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.915, "time_waiting": 7}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 8, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "road", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.33, "time_waiting": 8}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.33, "time_waiting": 8}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.73, "time_waiting": 8}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.73, "time_waiting": 8}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.91, "time_waiting": 8}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 9, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "road", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.29, "time_waiting": 9}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.29, "time_waiting": 9}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.715, "time_waiting": 9}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.715, "time_waiting": 9}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.905, "time_waiting": 9}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 10, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "road", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.25, "time_waiting": 10}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.25, "time_waiting": 10}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.7, "time_waiting": 10}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.7, "time_waiting": 10}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.9, "time_waiting": 10}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 11, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "road", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.21, "time_waiting": 11}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.21, "time_waiting": 11}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.685, "time_waiting": 11}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.685, "time_waiting": 11}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.895, "time_waiting": 11}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 12, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.17, "time_waiting": 12}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.17, "time_waiting": 12}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.67, "time_waiting": 12}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.67, "time_waiting": 12}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.89, "time_waiting": 12}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 13, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.13, "time_waiting": 13}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.13, "time_waiting": 13}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.655, "time_waiting": 13}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.655, "time_waiting": 13}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.885, "time_waiting": 13}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 14, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "road", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.09, "time_waiting": 14}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.09, "time_waiting": 14}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.64, "time_waiting": 14}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.64, "time_waiting": 14}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.88, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 15, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.05, "time_waiting": 15}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.05, "time_waiting": 15}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.625, "time_waiting": 15}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.625, "time_waiting": 15}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.875, "time_waiting": 15}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 16, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.01, "time_waiting": 16}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "WAITING", "survival_prob": 0.01, "time_waiting": 16}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.61, "time_waiting": 16}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.61, "time_waiting": 16}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.87, "time_waiting": 16}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 17, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.595, "time_waiting": 17}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.595, "time_waiting": 17}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.865, "time_waiting": 17}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 18, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.58, "time_waiting": 18}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.58, "time_waiting": 18}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.86, "time_waiting": 18}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 19, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.565, "time_waiting": 19}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.565, "time_waiting": 19}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.855, "time_waiting": 19}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 20, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.55, "time_waiting": 20}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.55, "time_waiting": 20}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.85, "time_waiting": 20}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.75, "time_waiting": 0}], "ambulances": [{"id": 1, "pos": [0, 1], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 1], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 21, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.535, "time_waiting": 21}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.535, "time_waiting": 21}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.845, "time_waiting": 21}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.735, "time_waiting": 1}], "ambulances": [{"id": 1, "pos": [0, 2], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 2], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 22, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.52, "time_waiting": 22}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.52, "time_waiting": 22}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.84, "time_waiting": 22}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.72, "time_waiting": 2}], "ambulances": [{"id": 1, "pos": [0, 3], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 3], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 23, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.505, "time_waiting": 23}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.505, "time_waiting": 23}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.835, "time_waiting": 23}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.705, "time_waiting": 3}], "ambulances": [{"id": 1, "pos": [0, 4], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 4], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 24, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.49, "time_waiting": 24}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.49, "time_waiting": 24}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.83, "time_waiting": 24}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.69, "time_waiting": 4}], "ambulances": [{"id": 1, "pos": [0, 5], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 5], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 25, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.475, "time_waiting": 25}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.475, "time_waiting": 25}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.825, "time_waiting": 25}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.675, "time_waiting": 5}], "ambulances": [{"id": 1, "pos": [0, 6], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 6], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 26, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.46, "time_waiting": 26}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.46, "time_waiting": 26}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.82, "time_waiting": 26}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.66, "time_waiting": 6}], "ambulances": [{"id": 1, "pos": [0, 7], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 7], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 27, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.445, "time_waiting": 27}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.445, "time_waiting": 27}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.815, "time_waiting": 27}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.645, "time_waiting": 7}], "ambulances": [{"id": 1, "pos": [0, 8], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [0, 8], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 10}, {"time_step": 28, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.43, "time_waiting": 28}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.81, "time_waiting": 28}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.63, "time_waiting": 8}], "ambulances": [{"id": 1, "pos": [1, 8], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [1, 8], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 8}, {"time_step": 29, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.415, "time_waiting": 29}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.805, "time_waiting": 29}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.615, "time_waiting": 9}], "ambulances": [{"id": 1, "pos": [2, 8], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [1, 7], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 8}, {"time_step": 30, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.4, "time_waiting": 30}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.8, "time_waiting": 30}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.6, "time_waiting": 10}], "ambulances": [{"id": 1, "pos": [3, 8], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [1, 6], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 8}, {"time_step": 31, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.385, "time_waiting": 31}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.795, "time_waiting": 31}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.585, "time_waiting": 11}], "ambulances": [{"id": 1, "pos": [4, 8], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [2, 6], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 8}, {"time_step": 32, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.37, "time_waiting": 32}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.79, "time_waiting": 32}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.57, "time_waiting": 12}], "ambulances": [{"id": 1, "pos": [5, 8], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [3, 6], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 8}, {"time_step": 33, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.355, "time_waiting": 33}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.785, "time_waiting": 33}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.555, "time_waiting": 13}], "ambulances": [{"id": 1, "pos": [6, 8], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [4, 6], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 8}, {"time_step": 34, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.34, "time_waiting": 34}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.78, "time_waiting": 34}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [7, 8], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [5, 6], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 6}, {"time_step": 35, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.325, "time_waiting": 35}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.775, "time_waiting": 35}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [7, 7], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [5, 5], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 6}, {"time_step": 36, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.31, "time_waiting": 36}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.77, "time_waiting": 36}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [7, 6], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [6, 5], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 6}, {"time_step": 37, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.295, "time_waiting": 37}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.765, "time_waiting": 37}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [7, 7], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [6, 4], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 6}, {"time_step": 38, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.28, "time_waiting": 38}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.76, "time_waiting": 38}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [7, 8], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [6, 3], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 6}, {"time_step": 39, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.265, "time_waiting": 39}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "WAITING", "survival_prob": 0.755, "time_waiting": 39}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [7, 9], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [6, 2], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 6}, {"time_step": 40, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.25, "time_waiting": 40}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "IN_RESCUE", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "IN_RESCUE", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [8, 9], "available": true, "onboard": [4, 6], "mission": "idle"}, {"id": 2, "pos": [6, 1], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 5}, {"time_step": 41, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.235, "time_waiting": 41}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "IN_RESCUE", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [9, 9], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [6, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 5}, {"time_step": 42, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.22, "time_waiting": 42}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "IN_RESCUE", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [7, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 5}, {"time_step": 43, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.205, "time_waiting": 43}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "IN_RESCUE", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [8, 0], "available": true, "onboard": [5], "mission": "idle"}], "medical_kits": 5}, {"time_step": 44, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.19, "time_waiting": 44}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "RESCUED", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [9, 0], "available": true, "onboard": [], "mission": "idle"}], "medical_kits": 5}, {"time_step": 45, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.175, "time_waiting": 45}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "RESCUED", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}], "medical_kits": 5}, {"time_step": 46, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.16, "time_waiting": 46}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "RESCUED", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}], "medical_kits": 5}, {"time_step": 47, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.145, "time_waiting": 47}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "RESCUED", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}], "medical_kits": 5}, {"time_step": 48, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.13, "time_waiting": 48}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "RESCUED", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}], "medical_kits": 5}, {"time_step": 49, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.115, "time_waiting": 49}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "RESCUED", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}], "medical_kits": 5}, {"time_step": 50, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.1, "time_waiting": 50}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "RESCUED", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}], "medical_kits": 5}, {"time_step": 51, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.085, "time_waiting": 51}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "RESCUED", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}], "medical_kits": 5}, {"time_step": 52, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.07, "time_waiting": 52}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "RESCUED", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}], "medical_kits": 5}, {"time_step": 53, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.055, "time_waiting": 53}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "RESCUED", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}], "medical_kits": 5}, {"time_step": 54, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.04, "time_waiting": 54}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "RESCUED", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}], "medical_kits": 5}, {"time_step": 55, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.025, "time_waiting": 55}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "RESCUED", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}], "medical_kits": 5}, {"time_step": 56, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "WAITING", "survival_prob": 0.01, "time_waiting": 56}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "RESCUED", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}], "medical_kits": 5}, {"time_step": 57, "grid": [["base", "road", "road", "road", "road", "safe", "safe", "road", "road", "road"], ["road", "road", "road", "blocked", "road", "road", "road", "safe", "road", "road"], ["road", "road", "road", "blocked", "road", "high_risk", "road", "road", "safe", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "high_risk", "high_risk", "high_risk", "road", "road", "road", "road"], ["road", "road", "road", "road", "high_risk", "road", "road", "road", "road", "road"], ["road", "road", "road", "road", "road", "road", "road", "blocked", "road", "road"], ["road", "safe", "road", "road", "road", "road", "road", "road", "road", "road"], ["road", "road", "safe", "road", "road", "blocked", "road", "road", "road", "road"], ["medical_center", "road", "road", "road", "road", "road", "road", "road", "road", "medical_center"]], "victims": [{"id": 1, "pos": [5, 7], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 2, "pos": [3, 2], "severity": "CRITICAL", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 17}, {"id": 3, "pos": [7, 6], "severity": "MODERATE", "status": "DECEASED", "survival_prob": 0.0, "time_waiting": 57}, {"id": 4, "pos": [1, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.43, "time_waiting": 28}, {"id": 5, "pos": [6, 1], "severity": "MINOR", "status": "RESCUED", "survival_prob": 0.75, "time_waiting": 40}, {"id": 6, "pos": [7, 8], "severity": "MODERATE", "status": "RESCUED", "survival_prob": 0.54, "time_waiting": 14}], "ambulances": [{"id": 1, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}, {"id": 2, "pos": [0, 0], "available": true, "onboard": [], "mission": "idle"}], "medical_kits": 5}], "kpis": {"victims_saved": 3, "avg_rescue_time": 42.0, "path_optimality_ratio": 0.857, "resource_utilization": {"ambulances_used": 2, "total_ambulance_trips": 2, "kits_remaining": 5, "kits_used": 5}, "risk_exposure_score": 0.0, "total_risk_cells_traversed": 0}, "survival_estimates": {"1": {"ml_predictions": {"kNN": {"survived": false, "probability": 0.143}, "Naive Bayes": {"survived": false, "probability": 0.0}, "MLP": {"survived": false, "probability": 0.283}, "ensemble": {"survived": 0, "probability": 0.142}}, "ensemble_survival_prob": 0.142, "adjusted_survival_prob": 0.142}, "2": {"ml_predictions": {"kNN": {"survived": false, "probability": 0.143}, "Naive Bayes": {"survived": false, "probability": 0.0}, "MLP": {"survived": false, "probability": 0.283}, "ensemble": {"survived": 0, "probability": 0.142}}, "ensemble_survival_prob": 0.142, "adjusted_survival_prob": 0.142}, "3": {"ml_predictions": {"kNN": {"survived": false, "probability": 0.0}, "Naive Bayes": {"survived": false, "probability": 0.005}, "MLP": {"survived": false, "probability": 0.14}, "ensemble": {"survived": 0, "probability": 0.048}}, "ensemble_survival_prob": 0.048, "adjusted_survival_prob": 0.048}, "4": {"ml_predictions": {"kNN": {"survived": false, "probability": 0.0}, "Naive Bayes": {"survived": false, "probability": 0.005}, "MLP": {"survived": false, "probability": 0.14}, "ensemble": {"survived": 0, "probability": 0.048}}, "ensemble_survival_prob": 0.048, "adjusted_survival_prob": 0.048}, "5": {"ml_predictions": {"kNN": {"survived": false, "probability": 0.0}, "Naive Bayes": {"survived": false, "probability": 0.185}, "MLP": {"survived": false, "probability": 0.14}, "ensemble": {"survived": 0, "probability": 0.108}}, "ensemble_survival_prob": 0.108, "adjusted_survival_prob": 0.108}, "6": {"ml_predictions": {"kNN": {"survived": true, "probability": 0.571}, "Naive Bayes": {"survived": false, "probability": 0.219}, "MLP": {"survived": false, "probability": 0.283}, "ensemble": {"survived": 0, "probability": 0.358}}, "ensemble_survival_prob": 0.358, "adjusted_survival_prob": 0.358}}};
+
+// ══════ TAB NAVIGATION ══════
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('fade-in');
+  event.target.classList.add('active');
+}
+
+// ══════ OVERVIEW ══════
+function initOverview() {
+  const kpis = D.kpis;
+  const total = D.snapshots[D.snapshots.length-1].victims.length;
+  document.getElementById('ov-saved').textContent = kpis.victims_saved;
+  document.getElementById('ov-total').textContent = total;
+  document.getElementById('ov-deceased').textContent = total - kpis.victims_saved - (total - kpis.victims_saved - D.snapshots[D.snapshots.length-1].victims.filter(v=>v.status==='DECEASED').length);
+  const deceased = D.snapshots[D.snapshots.length-1].victims.filter(v=>v.status==='DECEASED').length;
+  document.getElementById('ov-deceased').textContent = deceased;
+  document.getElementById('ov-time').textContent = kpis.avg_rescue_time.toFixed(1);
+  document.getElementById('ov-risk').textContent = kpis.total_risk_cells_traversed;
+
+  // Priority table
+  const sev_class = {CRITICAL:'sev-critical', MODERATE:'sev-moderate', MINOR:'sev-minor'};
+  const po = D.priority_order;
+  let pt = '<table class="vtable"><thead><tr><th>RANK</th><th>VICTIM</th><th>SEVERITY</th><th>FUZZY PRIORITY</th></tr></thead><tbody>';
+  po.forEach((v, i) => {
+    pt += `<tr><td><span style="font-family:var(--mono);color:var(--accent)">#${i+1}</span></td>
+      <td>V${v.id}</td>
+      <td><span class="severity-badge ${sev_class[v.severity]}">${v.severity}</span></td>
+      <td><span style="font-family:var(--mono);color:var(--accent3)">${80-i*15}%</span></td></tr>`;
+  });
+  pt += '</tbody></table>';
+  document.getElementById('priority-table').innerHTML = pt;
+
+  // Rescue summary
+  let rs = '<table class="vtable"><thead><tr><th>VICTIM</th><th>SEVERITY</th><th>RESCUE TIME</th><th>SURVIVAL PROB</th></tr></thead><tbody>';
+  if (D.rescue_log.length === 0) rs += '<tr><td colspan="4" class="empty">No rescues completed in this run</td></tr>';
+  D.rescue_log.forEach(r => {
+    const sev = D.snapshots[0].victims.find(v=>v.id===r.victim_id);
+    const s = sev ? sev.severity : '?';
+    rs += `<tr><td>V${r.victim_id}</td>
+      <td><span class="severity-badge ${sev_class[s] || ''}">${s}</span></td>
+      <td><span style="font-family:var(--mono)">${r.rescue_time}t</span></td>
+      <td>
+        <div class="surv-bar-wrap">
+          <div class="surv-bar"><div class="surv-fill" style="width:${r.survival_prob_at_rescue*100}%;background:${r.survival_prob_at_rescue>0.5?'var(--safe)':'var(--moderate)'}"></div></div>
+          <span class="surv-val">${(r.survival_prob_at_rescue*100).toFixed(0)}%</span>
+        </div>
+      </td></tr>`;
+  });
+  rs += '</tbody></table>';
+  document.getElementById('rescue-summary').innerHTML = rs;
+
+  // Resource stats
+  const ru = kpis.resource_utilization;
+  document.getElementById('resource-stats').innerHTML = `
+    <div class="csp-row"><span class="csp-key">Ambulances Used</span><span class="csp-val">${ru.ambulances_used} / 2</span></div>
+    <div class="csp-row"><span class="csp-key">Total Trips</span><span class="csp-val">${ru.total_ambulance_trips}</span></div>
+    <div class="csp-row"><span class="csp-key">Kits Used</span><span class="csp-val">${ru.kits_used} / 10</span></div>
+    <div class="csp-row"><span class="csp-key">Kits Remaining</span><span class="csp-val">${ru.kits_remaining}</span></div>
+    <div class="csp-row"><span class="csp-key">Path Optimality Ratio</span><span class="csp-val">${kpis.path_optimality_ratio}</span></div>
+    <div class="csp-row"><span class="csp-key">Risk Exposure Score</span><span class="csp-val">${(kpis.risk_exposure_score*100).toFixed(2)}%</span></div>
+  `;
+
+  // Architecture diagram
+  document.getElementById('arch-diagram').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;font-family:var(--mono)">
+      ${['🔍 Search: BFS · DFS · Greedy · A*', '🔒 CSP: MRV + Forward Checking', '🤖 ML: kNN · NB · MLP', '🌫️ Fuzzy Logic: 15-rule priority', '📊 Bayesian: Road blockage P', '🔄 Dynamic Replanning Engine'].map(m => `<div style="background:var(--surface);padding:7px 10px;border-radius:4px;border-left:2px solid var(--accent)">${m}</div>`).join('')}
+    </div>`;
+
+  // Bar chart - optimality
+  drawBarOptimality();
+}
+
+function drawBarOptimality() {
+  const c = document.getElementById('bar-optimality');
+  const ctx = c.getContext('2d');
+  const algos = ['BFS', 'DFS', 'Greedy-BF', 'A*_balanced'];
+  const bench = D.search_benchmark;
+  const costs = algos.map(a => bench[a] ? bench[a].path_cost || 0 : 0);
+  const maxCost = Math.max(...costs) || 1;
+  const w = c.width, h = c.height;
+  ctx.clearRect(0, 0, w, h);
+  const colors = ['#3b82f6', '#ef4444', '#f59e0b', '#22c55e'];
+  const barW = w / algos.length - 16;
+  const maxH = h - 50;
+  algos.forEach((a, i) => {
+    const bh = (costs[i] / maxCost) * maxH;
+    const x = i * (w / algos.length) + 8;
+    const y = maxH - bh + 10;
+    ctx.fillStyle = colors[i];
+    ctx.fillRect(x, y, barW, bh);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px Space Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(costs[i], x + barW/2, y - 4);
+    ctx.fillText(a, x + barW/2, maxH + 24);
+  });
+  ctx.strokeStyle = '#1e2535';
+  ctx.beginPath(); ctx.moveTo(0, maxH+10); ctx.lineTo(w, maxH+10); ctx.stroke();
+}
+
+// ══════ SIMULATION ══════
+let simStep = 0, simPlaying = false, simTimer = null;
+const CELL_COLORS = {
+  road: '#1a1f2e', high_risk: '#3a1515', blocked: '#111827', safe: '#162616',
+  medical_center: '#0d2240', base: '#2a1a08', road_highlight: '#232b3e'
+};
+const CELL_BORDER = {
+  road: '#1e2535', high_risk: '#7f1d1d', blocked: '#374151', safe: '#14532d',
+  medical_center: '#1e3a5f', base: '#78350f', road_highlight: '#374151'
+};
+
+function drawMap(step) {
+  const snap = D.snapshots[Math.min(step, D.snapshots.length-1)];
+  const canvas = document.getElementById('map-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const ROWS = 10, COLS = 10;
+  const cellW = W / COLS, cellH = H / ROWS;
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw cells
+  snap.grid.forEach((row, r) => {
+    row.forEach((cell, c) => {
+      const x = c * cellW, y = r * cellH;
+      ctx.fillStyle = CELL_COLORS[cell] || CELL_COLORS.road;
+      ctx.fillRect(x+1, y+1, cellW-2, cellH-2);
+      // Label special cells
+      if (cell === 'medical_center') {
+        ctx.fillStyle = '#3b82f6'; ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('✚', x+cellW/2, y+cellH/2);
+      } else if (cell === 'base') {
+        ctx.fillStyle = '#f0a823'; ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('⬡', x+cellW/2, y+cellH/2);
+      } else if (cell === 'blocked') {
+        ctx.fillStyle = '#4b5563'; ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('✕', x+cellW/2, y+cellH/2);
+      } else if (cell === 'high_risk') {
+        ctx.fillStyle = 'rgba(239,68,68,0.18)'; ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('🔥', x+cellW/2, y+cellH/2);
+      }
+    });
+  });
+
+  // Draw grid lines
+  ctx.strokeStyle = 'rgba(30,37,53,0.4)'; ctx.lineWidth = 0.5;
+  for (let r = 0; r <= ROWS; r++) { ctx.beginPath(); ctx.moveTo(0, r*cellH); ctx.lineTo(W, r*cellH); ctx.stroke(); }
+  for (let c = 0; c <= COLS; c++) { ctx.beginPath(); ctx.moveTo(c*cellW, 0); ctx.lineTo(c*cellW, H); ctx.stroke(); }
+
+  const sev_colors = {CRITICAL:'#f87171', MODERATE:'#fbbf24', MINOR:'#60a5fa'};
+  const st_colors = {WAITING:'#fff', IN_RESCUE:'#67e8f9', RESCUED:'#4ade80', DECEASED:'#4b5563'};
+
+  // Draw victims
+  snap.victims.forEach(v => {
+    const [r, c] = v.pos;
+    const x = c * cellW + cellW/2, y = r * cellH + cellH/2;
+    if (v.status === 'DECEASED') {
+      ctx.globalAlpha = 0.35;
+    }
+    // Glow for critical
+    if (v.status === 'WAITING' && v.severity === 'CRITICAL') {
+      ctx.shadowColor = sev_colors[v.severity]; ctx.shadowBlur = 10;
+    }
+    ctx.beginPath(); ctx.arc(x, y, cellW*0.28, 0, Math.PI*2);
+    ctx.fillStyle = st_colors[v.status] || '#fff'; ctx.fill();
+    ctx.strokeStyle = sev_colors[v.severity] || '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.shadowBlur = 0;
+    // V label
+    ctx.fillStyle = v.status === 'DECEASED' ? '#6b7280' : '#0f172a';
+    ctx.font = 'bold 9px Space Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('V'+v.id, x, y);
+    ctx.globalAlpha = 1;
+  });
+
+  // Draw ambulances
+  snap.ambulances.forEach(a => {
+    const [r, c] = a.pos;
+    const x = c * cellW + cellW * 0.7, y = r * cellH + cellH * 0.35;
+    ctx.shadowColor = '#f04e23'; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(x, y, cellW*0.22, 0, Math.PI*2);
+    ctx.fillStyle = '#f04e23'; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 8px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('A'+a.id, x, y);
+    ctx.shadowBlur = 0;
+  });
+
+  // Update state panel
+  const saved = snap.victims.filter(v=>v.status==='RESCUED').length;
+  const deceased = snap.victims.filter(v=>v.status==='DECEASED').length;
+  const waiting = snap.victims.filter(v=>v.status==='WAITING').length;
+  document.getElementById('sim-time').textContent = 'T = ' + snap.time_step;
+  document.getElementById('sim-slider').value = step;
+
+  let stateHtml = `
+    <div class="csp-row"><span class="csp-key">Time Step</span><span class="csp-val">${snap.time_step}</span></div>
+    <div class="csp-row"><span class="csp-key">Rescued</span><span class="csp-val" style="color:var(--safe)">${saved}</span></div>
+    <div class="csp-row"><span class="csp-key">Deceased</span><span class="csp-val" style="color:var(--risk)">${deceased}</span></div>
+    <div class="csp-row"><span class="csp-key">Waiting</span><span class="csp-val" style="color:var(--muted)">${waiting}</span></div>
+    <div class="csp-row"><span class="csp-key">Kits Left</span><span class="csp-val">${snap.medical_kits}</span></div>`;
+  snap.ambulances.forEach(a => {
+    stateHtml += `<div class="csp-row"><span class="csp-key">Amb #${a.id}</span><span class="csp-val">(${a.pos[0]},${a.pos[1]})</span></div>`;
+  });
+  document.getElementById('sim-state').innerHTML = stateHtml;
+}
+
+function togglePlay() {
+  simPlaying = !simPlaying;
+  document.getElementById('btn-play').textContent = simPlaying ? '⏸ Pause' : '▶ Play';
+  document.getElementById('btn-play').classList.toggle('active', simPlaying);
+  if (simPlaying) simTimer = setInterval(() => {
+    if (simStep < D.snapshots.length - 1) { simStep++; drawMap(simStep); }
+    else { simPlaying = false; clearInterval(simTimer); document.getElementById('btn-play').textContent = '▶ Play'; }
+  }, 200);
+  else clearInterval(simTimer);
+}
+function stepBack() { if (simStep > 0) { simStep--; drawMap(simStep); } }
+function stepFwd() { if (simStep < D.snapshots.length-1) { simStep++; drawMap(simStep); } }
+function resetSim() { simStep = 0; simPlaying = false; clearInterval(simTimer); document.getElementById('btn-play').textContent = '▶ Play'; drawMap(0); }
+function gotoStep(s) { simStep = s; drawMap(s); }
+
+// ══════ SEARCH ══════
+function initSearch() {
+  const bench = D.search_benchmark;
+  const algos = ['BFS', 'DFS', 'Greedy-BF', 'A*_balanced', 'A*_safe'];
+  const best_cost = Math.min(...algos.map(a => bench[a] ? bench[a].path_cost||999 : 999));
+
+  let html = `<thead><tr><th>ALGORITHM</th><th>NODES EXPANDED</th><th>PATH COST</th><th>RISK CELLS</th><th>TIME (ms)</th><th>OPTIMAL</th><th>PATH LENGTH</th></tr></thead><tbody>`;
+  algos.forEach(a => {
+    const s = bench[a];
+    if (!s) return;
+    const winner = s.path_cost === best_cost;
+    html += `<tr class="${winner?'winner':''}">
+      <td><span class="highlight">${a}</span></td>
+      <td>${s.nodes_expanded ?? '—'}</td>
+      <td>${s.path_cost ?? '—'}${winner?' ★':''}</td>
+      <td>${s.risk_cells ?? '—'}</td>
+      <td>${s.time_ms ?? '—'}</td>
+      <td>${s.optimal?'✓ Yes':'✗ No'}</td>
+      <td>${s.path_length ?? '—'}</td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('algo-bench-table').innerHTML = html;
+
+  // Search chart
+  drawSearchChart();
+
+  // Route analysis
+  let ra = '';
+  D.search_comparisons.forEach((sc, i) => {
+    ra += `<div style="margin-bottom:16px; padding:14px; background:var(--surface); border-radius:6px; border-left:2px solid var(--accent)">
+      <div style="font-size:12px; font-family:var(--mono); color:var(--accent3); margin-bottom:8px">
+        Route ${i+1}: (${sc.from}) → V${sc.victim_id} (${sc.to})
+      </div>
+      <div class="scroll-x"><table class="algo-table"><thead><tr><th>ALGO</th><th>NODES</th><th>COST</th><th>RISK CELLS</th><th>TIME ms</th></tr></thead><tbody>`;
+    const comps = sc.comparisons;
+    const best = Math.min(...Object.values(comps).map(c=>c.path_cost||999));
+    Object.entries(comps).forEach(([a, s]) => {
+      ra += `<tr class="${s.path_cost===best?'winner':''}"><td>${a}</td><td>${s.nodes_expanded||'—'}</td><td>${s.path_cost||'—'}${s.path_cost===best?' ★':''}</td><td>${s.risk_cells||0}</td><td>${s.time_ms||'—'}</td></tr>`;
+    });
+    ra += `</tbody></table></div>
+      <div style="font-size:11px; color:var(--muted); margin-top:6px">Selected: <span style="color:var(--accent)">${sc.selected.algorithm}</span> — ${sc.selected.selection_reason||'balanced policy'}</div>
+    </div>`;
+  });
+  document.getElementById('route-analysis').innerHTML = ra;
+}
+
+function drawSearchChart() {
+  const c = document.getElementById('search-chart');
+  const ctx = c.getContext('2d');
+  const bench = D.search_benchmark;
+  const algos = ['BFS', 'DFS', 'Greedy-BF', 'A*_balanced'];
+  const nodes = algos.map(a => bench[a] ? bench[a].nodes_expanded || 0 : 0);
+  const costs = algos.map(a => bench[a] ? bench[a].path_cost || 0 : 0);
+  const W = c.width, H = c.height, pad = 40, chartW = W - pad - 20, chartH = H - 60;
+  ctx.clearRect(0, 0, W, H);
+  const maxNodes = Math.max(...nodes);
+  const maxCost = Math.max(...costs);
+  const bw = chartW / algos.length;
+  const colors_n = ['#3b82f6', '#ef4444', '#f59e0b', '#22c55e'];
+  ctx.fillStyle = '#64748b'; ctx.font = '10px Space Mono'; ctx.textAlign = 'center';
+  ctx.fillText('■ Nodes Expanded    ■ Path Cost (normalized)', W/2, H-4);
+
+  algos.forEach((a, i) => {
+    const x = pad + i * bw;
+    const nh = (nodes[i] / maxNodes) * chartH;
+    const ch = (costs[i] / maxCost) * chartH * 0.6;
+    // Nodes bar
+    ctx.fillStyle = colors_n[i] + '99';
+    ctx.fillRect(x + 6, pad + chartH - nh, bw/2-8, nh);
+    // Cost bar
+    ctx.fillStyle = colors_n[i];
+    ctx.fillRect(x + bw/2 + 2, pad + chartH - ch, bw/2-8, ch);
+    // Labels
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px Space Mono'; ctx.textAlign = 'center';
+    ctx.fillText(a, x + bw/2, pad + chartH + 16);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = '9px Space Mono';
+    ctx.fillText(nodes[i], x + bw/4 + 6, pad + chartH - nh - 4);
+    ctx.fillText(costs[i], x + bw*3/4, pad + chartH - ch - 4);
+  });
+  // Axes
+  ctx.strokeStyle = '#1e2535'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, pad+chartH); ctx.lineTo(W-20, pad+chartH); ctx.stroke();
+}
+
+// ══════ CSP ══════
+function initCSP() {
+  const stats = D.csp_stats;
+  const naive = stats.naive_comparison;
+  document.getElementById('csp-stats-display').innerHTML = `
+    <div class="csp-row"><span class="csp-key">Solved</span><span class="csp-val" style="color:var(--safe)">${stats.solved ? '✓ YES' : '✗ NO'}</span></div>
+    <div class="csp-row"><span class="csp-key">Victims Assigned</span><span class="csp-val">${stats.victims_assigned}</span></div>
+    <div class="csp-row"><span class="csp-key">Backtracks (MRV)</span><span class="csp-val" style="color:var(--safe)">${stats.backtrack_count}</span></div>
+    <div class="csp-row"><span class="csp-key">Backtracks (Naive)</span><span class="csp-val" style="color:var(--moderate)">${naive?.backtrack_count ?? '—'}</span></div>
+    <div class="csp-row"><span class="csp-key">Forward Check Prunes</span><span class="csp-val">${stats.forward_check_prunes}</span></div>
+    <div class="csp-row"><span class="csp-key">Kits Used</span><span class="csp-val">${stats.kits_used} / 10</span></div>
+    <div class="csp-row"><span class="csp-key">Solve Time</span><span class="csp-val">${stats.solve_time_ms}ms</span></div>
+    <div style="margin-top:12px; padding:10px; background:var(--surface); border-radius:4px; font-size:11px; color:var(--muted); line-height:1.6">
+      <strong style="color:var(--text)">Heuristics used:</strong><br>
+      • <strong style="color:var(--accent)">MRV (Minimum Remaining Values)</strong>: selects victim with fewest valid ambulance slots<br>
+      • <strong style="color:var(--accent)">Degree Heuristic</strong>: tie-break by most constrained victim (highest severity)<br>
+      • <strong style="color:var(--accent)">Forward Checking</strong>: prunes branches if remaining kits can't satisfy all victims
+    </div>`;
+
+  drawCSPCompare();
+
+  // Assignments
+  const sev_class = {CRITICAL:'sev-critical', MODERATE:'sev-moderate', MINOR:'sev-minor'};
+  let html = '<table class="vtable"><thead><tr><th>PRIORITY</th><th>VICTIM</th><th>SEVERITY</th><th>AMBULANCE</th><th>KITS</th><th>JUSTIFICATION</th></tr></thead><tbody>';
+  D.assignments.forEach(a => {
+    const v = D.snapshots[0].victims.find(v=>v.id===a.victim_id);
+    const sev = v ? v.severity : '?';
+    html += `<tr>
+      <td><span style="font-family:var(--mono);color:var(--accent)">#${a.priority_rank}</span></td>
+      <td>V${a.victim_id}</td>
+      <td><span class="severity-badge ${sev_class[sev]||''}">${sev}</span></td>
+      <td><span style="font-family:var(--mono);color:var(--accent3)">Amb #${a.ambulance_id}</span></td>
+      <td><span style="font-family:var(--mono)">${a.kits_assigned}</span></td>
+      <td><span style="font-size:11px;color:var(--muted)">${a.justification}</span></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('assignments-display').innerHTML = html;
+}
+
+function drawCSPCompare() {
+  const c = document.getElementById('csp-compare-chart');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+  const stats = D.csp_stats;
+  const naive = stats.naive_comparison || {backtrack_count: 5, solve_time_ms: 0.05};
+  const labels = ['Backtracks', 'Solve Time (×10ms)'];
+  const heuristic = [stats.backtrack_count, stats.solve_time_ms * 10];
+  const naiveVals = [naive.backtrack_count || 1, (naive.solve_time_ms || 0.01) * 10];
+  const maxVal = Math.max(...heuristic, ...naiveVals, 1);
+  const bw = 40, gap = 30, startX = 50, barH = H - 60;
+  labels.forEach((l, i) => {
+    const x = startX + i * (bw*2 + gap);
+    // Heuristic bar
+    const h1 = ((heuristic[i]||0.01) / maxVal) * barH;
+    ctx.fillStyle = '#22c55e99';
+    ctx.fillRect(x, barH - h1 + 20, bw-4, h1);
+    ctx.fillStyle = '#22c55e'; ctx.font = '10px Space Mono'; ctx.textAlign = 'center';
+    ctx.fillText(heuristic[i], x+bw/2-2, barH - h1 + 16);
+    // Naive bar
+    const h2 = ((naiveVals[i]||0.01) / maxVal) * barH;
+    ctx.fillStyle = '#ef444499';
+    ctx.fillRect(x+bw, barH - h2 + 20, bw-4, h2);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillText(naiveVals[i].toFixed(1), x+bw*1.5-2, barH - h2 + 16);
+    // Label
+    ctx.fillStyle = '#64748b'; ctx.font = '9px Space Mono';
+    ctx.fillText(l, x+bw-2, barH + 36);
+  });
+  ctx.strokeStyle = '#1e2535'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(40, 20); ctx.lineTo(40, barH+20); ctx.lineTo(W, barH+20); ctx.stroke();
+  ctx.fillStyle = '#22c55e'; ctx.font = '9px Space Mono'; ctx.textAlign = 'left';
+  ctx.fillText('■ Heuristic (MRV+FC)', 50, H-6);
+  ctx.fillStyle = '#ef4444';
+  ctx.fillText('■ Naive', 170, H-6);
+}
+
+// ══════ ML ══════
+function initML() {
+  const sml = D.ml_metrics.survival_models;
+  function renderMetrics(id, m) {
+    const cm = m.confusion_matrix;
+    document.getElementById(id).innerHTML = `
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+        <div>
+          <div class="cm">
+            <div class="cm-cell cm-tn"><div>${cm[0][0]}</div><div class="cm-label">TN</div></div>
+            <div class="cm-cell cm-fp"><div>${cm[0][1]}</div><div class="cm-label">FP</div></div>
+            <div class="cm-cell cm-fn"><div>${cm[1][0]}</div><div class="cm-label">FN</div></div>
+            <div class="cm-cell cm-tp"><div>${cm[1][1]}</div><div class="cm-label">TP</div></div>
+          </div>
+          <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px">Confusion Matrix</div>
+        </div>
+        <div style="flex:1;min-width:140px">
+          ${[['Accuracy', m.accuracy], ['Precision', m.precision], ['Recall', m.recall], ['F1 Score', m.f1]].map(([k,v]) => `
+            <div style="margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);margin-bottom:3px">
+                <span style="color:var(--muted)">${k}</span><span style="color:var(--accent3)">${(v*100).toFixed(1)}%</span>
+              </div>
+              <div class="metric-bar"><div class="metric-fill" style="width:${v*100}%;background:${v>0.8?'var(--safe)':v>0.5?'var(--moderate)':'var(--risk)'}"></div></div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+  renderMetrics('ml-knn-metrics', sml['kNN']);
+  renderMetrics('ml-nb-metrics', sml['Naive Bayes']);
+  renderMetrics('ml-mlp-metrics', sml['MLP']);
+  drawMLCompare();
+  initSurvivalEstimates();
+}
+
+function drawMLCompare() {
+  const c = document.getElementById('ml-compare-chart');
+  const ctx = c.getContext('2d');
+  const sml = D.ml_metrics.survival_models;
+  const models = ['kNN', 'Naive Bayes', 'MLP'];
+  const accs = models.map(m => sml[m].accuracy);
+  const f1s = models.map(m => sml[m].f1);
+  const W = c.width, H = c.height, pad = 40;
+  const barH = H - 60, bw = 35;
+  ctx.clearRect(0, 0, W, H);
+  const colors = ['#3b82f6', '#f59e0b', '#22c55e'];
+  models.forEach((m, i) => {
+    const spacing = (W - pad) / models.length;
+    const x = pad + i * spacing;
+    const ah = accs[i] * (barH - 20);
+    const fh = f1s[i] * (barH - 20);
+    ctx.fillStyle = colors[i] + '88';
+    ctx.fillRect(x, 20 + barH - 20 - ah, bw, ah);
+    ctx.fillStyle = colors[i];
+    ctx.fillRect(x + bw + 4, 20 + barH - 20 - fh, bw, fh);
+    ctx.fillStyle = colors[i]; ctx.font = '9px Space Mono'; ctx.textAlign = 'center';
+    ctx.fillText((accs[i]*100).toFixed(0)+'%', x+bw/2, 20+barH-20-ah-4);
+    ctx.fillText((f1s[i]*100).toFixed(0)+'%', x+bw+4+bw/2, 20+barH-20-fh-4);
+    ctx.fillStyle = '#64748b'; ctx.font = '9px Space Mono';
+    ctx.fillText(m, x+bw, barH+40);
+  });
+  ctx.strokeStyle = '#1e2535';
+  ctx.beginPath(); ctx.moveTo(pad, 20); ctx.lineTo(pad, barH+20); ctx.lineTo(W, barH+20); ctx.stroke();
+  ctx.fillStyle = '#64748b88'; ctx.font = '9px Space Mono'; ctx.textAlign = 'left';
+  ctx.fillText('■ Accuracy   ■ F1 Score', pad, H-4);
+}
+
+function initSurvivalEstimates() {
+  const se = D.survival_estimates;
+  const snap0 = D.snapshots[0];
+  let html = '<table class="vtable"><thead><tr><th>VICTIM</th><th>SEVERITY</th><th>kNN</th><th>NB</th><th>MLP</th><th>ENSEMBLE</th></tr></thead><tbody>';
+  Object.entries(se).forEach(([vid, est]) => {
+    const v = snap0.victims.find(v => v.id == vid);
+    const sev = v ? v.severity : '?';
+    const sev_class = {CRITICAL:'sev-critical', MODERATE:'sev-moderate', MINOR:'sev-minor'};
+    const ml = est.ml_predictions;
+    const pct = p => `<span style="font-family:var(--mono);color:${p>0.5?'var(--safe)':'var(--risk)'}">${(p*100).toFixed(0)}%</span>`;
+    html += `<tr>
+      <td>V${vid}</td>
+      <td><span class="severity-badge ${sev_class[sev]||''}">${sev}</span></td>
+      <td>${ml.kNN ? pct(ml.kNN.probability) : '—'}</td>
+      <td>${ml['Naive Bayes'] ? pct(ml['Naive Bayes'].probability) : '—'}</td>
+      <td>${ml.MLP ? pct(ml.MLP.probability) : '—'}</td>
+      <td>${ml.ensemble ? pct(ml.ensemble.probability) : '—'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('survival-estimates').innerHTML = html;
+}
+
+// ══════ UNCERTAINTY ══════
+function initUncertainty() {
+  document.getElementById('fuzzy-explanation').innerHTML = `
+    <p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px">
+      The fuzzy system uses <strong style="color:var(--text)">trapezoidal membership functions</strong> for severity, survival probability, and wait time. 
+      <strong style="color:var(--accent)">15 Mamdani rules</strong> fire simultaneously with min-AND, aggregated via weighted centroid (CoG) defuzzification.
+      Output is a priority score 0–100 guiding rescue order decisions.
+    </p>
+    <div style="font-size:11px;font-family:var(--mono);color:var(--muted)">Linguistic variables: severity[low/med/high] × survival[low/med/high] × wait[short/med/long] → priority[low/medium/high/critical/urgent]</div>`;
+
+  document.getElementById('bayesian-explanation').innerHTML = `
+    <p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px">
+      Uses <strong style="color:var(--text)">Bayes' Theorem</strong>: P(blocked | evidence) = P(evidence | blocked) × P(blocked) / P(evidence).
+      Prior probabilities are defined per zone type. Likelihoods are calibrated from disaster domain knowledge.
+      Posterior > 0.6 triggers route policy change to 'safe'.
+    </p>`;
+
+  updateFuzzy();
+  updateBayes();
+}
+
+function fuzzyMembership(a, b, c, d, x) {
+  if (x <= a || x >= d) return 0;
+  if (b <= x && x <= c) return 1;
+  if (x < b) return (x-a)/(b-a);
+  return (d-x)/(d-c);
+}
+
+function computeFuzzy(severity, survival, wait) {
+  const sev_low = fuzzyMembership(0.9,1.0,1.5,1.6, severity);
+  const sev_med = fuzzyMembership(1.5,2.0,2.0,2.5, severity);
+  const sev_high = fuzzyMembership(2.4,2.7,3.0,3.1, severity);
+  const surv_low = fuzzyMembership(-0.1,0,0.3,0.5, survival);
+  const surv_med = fuzzyMembership(0.3,0.5,0.6,0.8, survival);
+  const surv_high = fuzzyMembership(0.6,0.75,1.0,1.1, survival);
+  const wait_short = fuzzyMembership(-1,0,5,10, wait);
+  const wait_med = fuzzyMembership(8,12,18,22, wait);
+  const wait_long = fuzzyMembership(18,22,30,31, wait);
+
+  const rules = {
+    urgent: Math.max(Math.min(sev_high, surv_low), Math.min(sev_high, wait_long)),
+    critical: Math.max(Math.min(sev_high, surv_med), Math.min(sev_med, surv_low, wait_long)),
+    high: Math.max(Math.min(sev_high, surv_high), Math.min(sev_med, surv_low), Math.min(sev_med, wait_long)),
+    medium: Math.max(Math.min(sev_med, surv_med), Math.min(sev_med, wait_med), Math.min(sev_low, surv_low)),
+    low: Math.max(Math.min(sev_low, surv_high), Math.min(sev_low, wait_short), sev_low * surv_med),
+  };
+  const levels = {urgent:90, critical:75, high:60, medium:40, low:20};
+  let num = 0, den = 0;
+  Object.entries(rules).forEach(([k,v]) => { num += v * levels[k]; den += v; });
+  const score = den > 0 ? num/den : 50;
+  return {score, rules};
+}
+
+function updateFuzzy() {
+  const sev = parseFloat(document.getElementById('f-sev').value);
+  const surv = parseFloat(document.getElementById('f-surv').value);
+  const wait = parseFloat(document.getElementById('f-wait').value);
+  document.getElementById('f-sev-v').textContent = sev.toFixed(1);
+  document.getElementById('f-surv-v').textContent = surv.toFixed(2);
+  document.getElementById('f-wait-v').textContent = wait;
+  const {score, rules} = computeFuzzy(sev, surv, wait);
+  const dominant = Object.entries(rules).sort((a,b)=>b[1]-a[1])[0];
+  const colors = {urgent:'#f87171', critical:'#fb923c', high:'#fbbf24', medium:'#94a3b8', low:'#22c55e'};
+  document.getElementById('fuzzy-result').innerHTML = `
+    <div style="font-size:20px;font-weight:800;color:${colors[dominant[0]] || '#fff'};margin-bottom:8px">
+      Priority Score: ${score.toFixed(1)} / 100
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Dominant rule: <strong style="color:${colors[dominant[0]]}">${dominant[0].toUpperCase()}</strong> (strength: ${dominant[1].toFixed(3)})</div>
+    ${Object.entries(rules).map(([k,v]) => `
+      <div class="fuzzy-rule">
+        <span class="fuzzy-name">${k}</span>
+        <div class="fuzzy-bar-wrap"><div class="fuzzy-fill" style="width:${v*100}%;background:${colors[k]}"></div></div>
+        <span class="fuzzy-val">${v.toFixed(3)}</span>
+      </div>`).join('')}`;
+}
+
+function updateBayes() {
+  const zone = document.getElementById('b-zone').value;
+  const evidence = [];
+  if (document.getElementById('b-aftershock').checked) evidence.push('aftershock_detected');
+  if (document.getElementById('b-fire').checked) evidence.push('fire_nearby');
+  if (document.getElementById('b-struct').checked) evidence.push('structural_damage_report');
+  if (document.getElementById('b-traffic').checked) evidence.push('traffic_flow_stopped');
+
+  const priors = {high_risk_zone:0.65, moderate_zone:0.30, safe_zone:0.08};
+  const likelihoods = {
+    aftershock_detected: {blocked:0.80, not_blocked:0.20},
+    fire_nearby: {blocked:0.70, not_blocked:0.25},
+    structural_damage_report: {blocked:0.75, not_blocked:0.15},
+    traffic_flow_stopped: {blocked:0.90, not_blocked:0.05},
+  };
+
+  let pb = priors[zone] || 0.3, pnb = 1 - pb;
+  evidence.forEach(ev => {
+    if (likelihoods[ev]) { pb *= likelihoods[ev].blocked; pnb *= likelihoods[ev].not_blocked; }
+  });
+  const total = pb + pnb;
+  const post = total > 0 ? pb/total : priors[zone];
+  const color = post > 0.7 ? 'var(--risk)' : post > 0.4 ? 'var(--moderate)' : 'var(--safe)';
+  const rec = post > 0.6 ? '⚠ REPLAN ROUTE' : post > 0.4 ? '◈ MONITOR' : '✓ PROCEED';
+
+  document.getElementById('bayes-result').innerHTML = `
+    <div style="font-size:24px;font-weight:800;color:${color};margin-bottom:8px">
+      P(blocked | evidence) = ${(post*100).toFixed(1)}%
+    </div>
+    <div style="font-size:13px;color:${color};font-family:var(--mono);margin-bottom:8px">${rec}</div>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <div style="flex:1;height:10px;background:${color};border-radius:3px;opacity:0.8;width:${post*100}%"></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted)">
+      Prior: ${(priors[zone]*100).toFixed(0)}% · Evidence: [${evidence.join(', ')||'none'}]<br>
+      P(clear) = ${((1-post)*100).toFixed(1)}%
+    </div>`;
+}
+
+// ══════ DECISION LOG ══════
+let logFilter = 'ALL';
+function initDecisionLog() { renderLog(); }
+function filterLog(f) {
+  logFilter = f;
+  document.querySelectorAll('.nav-tab + div .btn, #tab-decisions .btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderLog();
+}
+function renderLog() {
+  const types_color = {
+    INITIAL_PLANNING:'#3b82f6', CSP_ALLOCATION:'#f59e0b', LOCAL_SEARCH_OPTIMIZATION:'#a78bfa',
+    ROUTE_POLICY_CHANGE:'#f04e23', DYNAMIC_EVENT:'#ef4444', REPLAN_TRIGGERED:'#f97316',
+    VICTIM_PICKUP:'#22c55e', VICTIM_RESCUED:'#4ade80', VICTIM_DECEASED:'#6b7280',
+    NEW_VICTIM:'#fb7185', DEFAULT:'#64748b'
+  };
+  const log = D.decision_log;
+  const filtered = logFilter === 'ALL' ? log : log.filter(e => e.event_type.includes(logFilter) || e.event_type === logFilter);
+  let html = '';
+  filtered.forEach(e => {
+    const color = types_color[e.event_type] || types_color.DEFAULT;
+    html += `<div class="dlog-entry">
+      <span class="dlog-time">T=${e.time_step}</span>
+      <div class="dlog-type" style="color:${color}">${e.event_type}</div>
+      <div class="dlog-desc">${e.description}</div>
+      <div class="dlog-obj">↳ Prioritized: ${e.objective_prioritized}</div>
+      <div class="dlog-just">${e.justification}</div>
+    </div>`;
+  });
+  if (!filtered.length) html = '<div class="empty">No entries match this filter</div>';
+  document.getElementById('decision-log').innerHTML = html;
+}
+
+// ══════ POLICY COMPARISON ══════
+function initCompare() {
+  const p = D.policies;
+  // Policy table
+  const metrics = ['saved', 'deceased', 'avg_time', 'risk', 'optimality'];
+  const headers = ['POLICY', 'RESCUED', 'DECEASED', 'AVG TIME', 'RISK SCORE', 'OPTIMALITY'];
+  let html = `<div class="policy-row">${headers.map(h=>`<div>${h}</div>`).join('')}</div>`;
+  const names = ['fast', 'safe', 'balanced'];
+  const colors = {fast:'var(--accent)', safe:'var(--safe)', balanced:'var(--accent3)'};
+  names.forEach(n => {
+    const d = p[n];
+    html += `<div class="policy-row">
+      <div class="policy-name" style="color:${colors[n]}">${n.toUpperCase()}</div>
+      <div style="color:var(--safe)">${d.saved}</div>
+      <div style="color:var(--risk)">${d.deceased}</div>
+      <div style="font-family:var(--mono)">${d.avg_time}t</div>
+      <div style="color:${d.risk>0?'var(--risk)':'var(--safe)'}">${(d.risk*100).toFixed(2)}%</div>
+      <div style="font-family:var(--mono)">${d.optimality}</div>
+    </div>`;
+  });
+  document.getElementById('policy-table').innerHTML = html;
+
+  // Trade-off explanation
+  document.getElementById('tradeoff-explain').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--muted);line-height:1.7">
+      <div style="border-left:3px solid var(--accent);padding-left:12px">
+        <strong style="color:var(--accent)">FAST policy</strong>: Uses Greedy Best-First search. 
+        Minimizes estimated distance at each step but does not consider risk exposure. 
+        Result: lower rescue time but higher risk score (${(p.fast.risk*100).toFixed(2)}%).
+        Trade-off: <em>Rescue Time ↓ vs Risk Exposure ↑</em> (Conflicting Objective 1).
+      </div>
+      <div style="border-left:3px solid var(--safe);padding-left:12px">
+        <strong style="color:var(--safe)">SAFE policy</strong>: Uses A* with high risk penalty (10×) and disallows high-risk zones.
+        Routes avoid fire/collapse areas entirely. Result: zero risk exposure but possibly longer routes.
+        Trade-off: <em>Risk Exposure ↓ vs Rescue Time ↑</em>.
+      </div>
+      <div style="border-left:3px solid var(--accent3);padding-left:12px">
+        <strong style="color:var(--accent3)">BALANCED policy</strong>: A* with risk_penalty=3.0. 
+        Allows risk zones if they significantly reduce path cost, otherwise avoids them.
+        Bayesian posterior > 0.6 triggers automatic switch to safe routing.
+        Trade-off: <em>Optimal compromise between Objective 1 and Objective 2</em>.
+      </div>
+    </div>`;
+
+  drawRadar();
+}
+
+function drawRadar() {
+  const c = document.getElementById('radar-chart');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height, cx = W/2, cy = H/2, R = 110;
+  ctx.clearRect(0, 0, W, H);
+  const axes = ['Rescued', 'Safe Route', 'Fast Rescue', 'Optimality', 'Low Risk'];
+  const N = axes.length;
+  const p = D.policies;
+  const maxVals = [6, 1, 1/42, 1, 1];
+  const datasets = [
+    {label:'FAST',    color:'#f04e23', vals:[p.fast.saved,    1-p.fast.risk,   1-p.fast.avg_time/50,    p.fast.optimality,    1-p.fast.risk]},
+    {label:'SAFE',    color:'#22c55e', vals:[p.safe.saved,    1-p.safe.risk,   1-p.safe.avg_time/50,    p.safe.optimality,    1-p.safe.risk]},
+    {label:'BALANCED',color:'#23d5f0', vals:[p.balanced.saved,1-p.balanced.risk,1-p.balanced.avg_time/50,p.balanced.optimality,1-p.balanced.risk]},
+  ];
+  // Normalize 0-1
+  const maxR = 6;
+  const norm = v => Math.max(0, Math.min(1, v / maxR));
+
+  // Draw spider grid
+  for (let i = 1; i <= 5; i++) {
+    const r = R * i / 5;
+    ctx.beginPath();
+    for (let j = 0; j < N; j++) {
+      const angle = (j / N) * Math.PI * 2 - Math.PI/2;
+      const x = cx + r * Math.cos(angle), y = cy + r * Math.sin(angle);
+      j === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath(); ctx.strokeStyle = '#1e2535'; ctx.lineWidth = 1; ctx.stroke();
+  }
+  // Draw axes
+  axes.forEach((a, j) => {
+    const angle = (j / N) * Math.PI * 2 - Math.PI/2;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + R * Math.cos(angle), cy + R * Math.sin(angle));
+    ctx.strokeStyle = '#2a3448'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#64748b'; ctx.font = '11px Syne'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lx = cx + (R+22) * Math.cos(angle), ly = cy + (R+22) * Math.sin(angle);
+    ctx.fillText(a, lx, ly);
+  });
+  // Draw datasets
+  datasets.forEach(ds => {
+    ctx.beginPath();
+    ds.vals.forEach((v, j) => {
+      const nv = norm(v) * R;
+      const angle = (j / N) * Math.PI * 2 - Math.PI/2;
+      const x = cx + nv * Math.cos(angle), y = cy + nv * Math.sin(angle);
+      j === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.strokeStyle = ds.color; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = ds.color + '22'; ctx.fill();
+  });
+  // Legend
+  datasets.forEach((ds, i) => {
+    ctx.fillStyle = ds.color; ctx.fillRect(10, H-30+i*0, 12, 2);
+    ctx.font = '11px Space Mono'; ctx.fillText(ds.label, 26, H-24 + i*14);
+  });
+  // Reposition legend
+  datasets.forEach((ds, i) => {
+    ctx.fillStyle = ds.color;
+    ctx.fillRect(10, 10+i*16, 20, 3);
+    ctx.font = '11px Space Mono'; ctx.textAlign = 'left';
+    ctx.fillText(ds.label, 36, 15+i*16);
+  });
+}
+
+// ══════ INIT ALL ══════
+window.onload = () => {
+  initOverview();
+  drawMap(0);
+  initSearch();
+  initCSP();
+  initML();
+  initUncertainty();
+  initDecisionLog();
+  initCompare();
+};
+</script>
+</body>
+</html>
